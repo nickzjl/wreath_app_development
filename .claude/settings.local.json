@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest *)",
+      "Bash(mv /Users/nickzhao/code/wreath/.claude /tmp/wreath-claude-backup)",
+      "Bash(mv /tmp/wreath-claude-backup /Users/nickzhao/code/wreath/.claude)",
+      "Read(//private/tmp/wreath-claude-backup/**)",
+      "Bash(npm install *)",
+      "Bash(cp assets/images/tabIcons/explore.png assets/images/tabIcons/create.png)",
+      "Bash(cp assets/images/tabIcons/explore@2x.png assets/images/tabIcons/create@2x.png)",
+      "Bash(cp assets/images/tabIcons/explore@3x.png assets/images/tabIcons/create@3x.png)",
+      "Bash(cp assets/images/tabIcons/home.png assets/images/tabIcons/profile.png)",
+      "Bash(cp assets/images/tabIcons/home@2x.png assets/images/tabIcons/profile@2x.png)",
+      "Bash(wait)",
+      "Bash(node *)",
+      "Bash(npx expo *)",
+      "Bash(npm -v)"
+    ]
+  }
+}

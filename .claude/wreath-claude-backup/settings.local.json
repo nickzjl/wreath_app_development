@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx create-expo-app@latest *)",
+      "Bash(mv /Users/nickzhao/code/wreath/.claude /tmp/wreath-claude-backup)",
+      "Bash(mv /tmp/wreath-claude-backup /Users/nickzhao/code/wreath/.claude)"
+    ]
+  }
+}
