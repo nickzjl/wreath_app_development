@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -52,6 +51,7 @@ export default function CreateScreen() {
   const [loading, setLoading] = useState(false);
   const [titleError, setTitleError] = useState<string | null>(null);
   const [sizeError, setSizeError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   function getDurationDays(): number {
     if (durationOpt === 'Custom') return parseInt(durationCustom, 10) || 0;
@@ -90,51 +90,66 @@ export default function CreateScreen() {
   async function handleSubmit() {
     if (!validate()) return;
     setLoading(true);
+    setSubmitError(null);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const slug = slugify(title);
+      const maxMembers = parseInt(sizeOpt, 10);
+
+      const { data: bracket, error: bracketError } = await supabase
+        .from('brackets')
+        .insert({
+          title: title.trim(),
+          slug,
+          goal_type: goalType,
+          duration_days: getDurationDays(),
+          track_type: isStaked ? 'staked' : 'social',
+          stake_amount_cents: getStakeCents(),
+          max_members: maxMembers,
+          min_members: isStaked ? 2 : 1,
+          visibility: privacy.toLowerCase(),
+          status: 'pending_review',
+          created_by: user.id,
+        })
+        .select('id, slug')
+        .single();
+
+      if (bracketError) {
+        console.error('[create bracket]', bracketError);
+        setSubmitError(bracketError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { error: memberError } = await supabase.from('bracket_members').insert({
+        bracket_id: bracket!.id,
+        user_id: user.id,
+        role: 'host',
+        stake_paid: false,
+      });
+
+      if (memberError) {
+        console.error('[create bracket_members]', memberError);
+        setSubmitError(memberError.message);
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
-      return;
-    }
-
-    const slug = slugify(title);
-    const maxMembers = parseInt(sizeOpt, 10);
-
-    const { data: bracket, error } = await supabase
-      .from('brackets')
-      .insert({
-        title: title.trim(),
-        slug,
-        goal_type: goalType,
-        duration_days: getDurationDays(),
-        track_type: isStaked ? 'staked' : 'social',
-        stake_amount_cents: getStakeCents(),
-        max_members: maxMembers,
-        min_members: isStaked ? 2 : 1,
-        visibility: privacy.toLowerCase(),
-        status: 'pending_review',
-        created_by: user.id,
-      })
-      .select('id, slug')
-      .single();
-
-    if (error) {
+      router.push(`/bracket/${bracket!.slug}` as Href);
+    } catch (err) {
+      console.error('[handleSubmit]', err);
+      setSubmitError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
       setLoading(false);
-      Alert.alert('Error', error.message);
-      return;
     }
-
-    await supabase.from('bracket_members').insert({
-      bracket_id: bracket.id,
-      user_id: user.id,
-      role: 'host',
-      stake_paid: false,
-    });
-
-    setLoading(false);
-    router.push(`/bracket/${bracket.slug}` as Href);
   }
 
   return (
@@ -257,6 +272,8 @@ export default function CreateScreen() {
             />
           </View>
 
+          {submitError && <Text style={styles.submitError}>{submitError}</Text>}
+
           <Pressable
             style={({ pressed }) => [styles.submitButton, pressed && styles.submitPressed]}
             onPress={handleSubmit}
@@ -332,6 +349,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     fontSize: 13,
     color: '#C0392B',
+  },
+  submitError: {
+    fontFamily: fonts.body,
+    fontSize: 13,
+    color: '#c00',
+    lineHeight: 18,
   },
   submitButton: {
     backgroundColor: colors.ink,
